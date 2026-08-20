@@ -1,0 +1,56 @@
+@import 'tailwindcss';
+
+/*
+  Design language: a split-flap departures board. Tasks move through
+  stages (TODO -> IN PROGRESS -> DONE) the same way flights move through
+  a manifest — so status and priority are rendered as flap-style mono
+  chips, and the dark "board" panel is the one recurring signature
+  surface, used deliberately rather than everywhere.
+*/
+@theme {
+  --color-canvas: #f1f3f4;
+  --color-board: #1b2430;
+  --color-board-light: #2a3644;
+  --color-flap: #edeef0;
+  --color-signal: #f5a623;
+  --color-signal-dark: #c9820e;
+  --color-ink: #1b2430;
+  --color-muted: #6b7280;
+  --color-line: #dadee2;
+  --color-danger: #d64545;
+  --color-success: #2e9e6d;
+
+  --font-display: 'Space Grotesk', system-ui, sans-serif;
+  --font-body: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono: 'Space Mono', ui-monospace, monospace;
+}
+
+@layer base {
+  body {
+    @apply bg-canvas text-ink font-body antialiased;
+  }
+
+  /* Visible keyboard focus everywhere — never suppressed for mouse users only. */
+  :focus-visible {
+    outline: 2px solid var(--color-signal);
+    outline-offset: 2px;
+  }
+}
+
+@layer utilities {
+  /* The recurring flap-chip treatment for status/priority values. */
+  .flap-chip {
+    @apply font-mono text-xs font-bold uppercase tracking-widest;
+    letter-spacing: 0.08em;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

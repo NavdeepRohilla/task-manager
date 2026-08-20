@@ -1,0 +1,142 @@
+// Prisma schema — Phase 1
+// Pinned to the Prisma 6.x "classic engine" conventions deliberately (see server README):
+// Prisma 7 removed the Rust engine, made driver adapters mandatory, and moved the
+// datasource URL out of this file into a prisma.config.ts. That's a big surface
+// change to absorb on day one of a new project, so this schema uses the
+// still-fully-supported, extensively documented Prisma 6 style.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  COMPLETED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role     @default(USER)
+  avatarUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tasksOwned    Task[]               @relation("TaskOwner")
+  tasksAssigned Task[]               @relation("TaskAssignee")
+  comments      Comment[]
+  refreshTokens RefreshToken[]
+  resetTokens   PasswordResetToken[]
+
+  @@map("users")
+}
+
+// One row per issued refresh token (tracked by id, not by storing the raw
+// token). The JWT carries this id as its `jti` claim, so validating a refresh
+// token means: verify the signature, then check this row still exists,
+// still belongs to that user, and hasn't been revoked or expired.
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  revoked   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+// Only a SHA-256 hash of the reset token is stored. The raw token only ever
+// lives in the emailed link, so a database leak alone can't be used to reset
+// anyone's password.
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("password_reset_tokens")
+}
+
+model Task {
+  id          String     @id @default(cuid())
+  title       String
+  description String?
+  priority    Priority   @default(MEDIUM)
+  status      TaskStatus @default(TODO)
+  dueDate     DateTime?
+  completedAt DateTime?
+  category    String?
+  tags        String[]   @default([])
+  isArchived  Boolean    @default(false)
+
+  ownerId String
+  owner   User   @relation("TaskOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  assignedUserId String?
+  assignedUser   User?   @relation("TaskAssignee", fields: [assignedUserId], references: [id], onDelete: SetNull)
+
+  comments    Comment[]
+  attachments Attachment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ownerId])
+  @@index([assignedUserId])
+  @@index([status])
+  @@map("tasks")
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  message   String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([taskId])
+  @@map("comments")
+}
+
+// Schema defined now so migrations are additive later; the upload endpoints
+// themselves (Multer + storage) land in a later phase.
+model Attachment {
+  id        String   @id @default(cuid())
+  fileName  String
+  fileUrl   String
+  fileType  String?
+  fileSize  Int?
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([taskId])
+  @@map("attachments")
+}
