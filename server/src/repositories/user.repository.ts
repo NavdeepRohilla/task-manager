@@ -1,5 +1,7 @@
-import { Role, UserModel } from '@prisma/client';
+import { Role, User } from '@prisma/client';
 import { prisma } from '../config/prisma';
+
+
 
 interface CreateUserInput {
   name: string;
@@ -8,8 +10,7 @@ interface CreateUserInput {
   role?: Role;
 }
 
-export type PublicUserRecord = Omit<UserModel, 'password'>;
-
+export type PublicUserRecord = Omit<User, 'password'>;
 const publicUserSelect = {
   id: true,
   name: true,

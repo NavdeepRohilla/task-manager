@@ -1,8 +1,9 @@
-import { Role, CommentWithUser } from '@prisma/client';
+import { Role } from '@prisma/client';
 import { ApiError } from '../utils/ApiError';
 import { commentRepository } from '../repositories/comment.repository';
 import { taskService } from './task.service';
 import { CurrentUser } from '../types/express';
+import { CommentWithUser } from '../repositories/comment.repository';
 
 export const commentService = {
   addComment: async (taskId: string, currentUser: CurrentUser, message: string): Promise<CommentWithUser> => {

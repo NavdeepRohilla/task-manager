@@ -1,12 +1,29 @@
-import { Prisma, CommentWithUser, CommentWithTask } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../config/prisma';
+
 
 const commentWithUserInclude = {
   user: { select: { id: true, name: true, email: true } },
-} satisfies Prisma.TaskInclude; // loose stub type; real generated client provides CommentInclude
+} satisfies Prisma.CommentInclude;
+
+const commentWithTaskInclude = {
+  task: { select: { ownerId: true } },
+} satisfies Prisma.CommentInclude;
+
+export type CommentWithUser = Prisma.CommentGetPayload<{
+  include: typeof commentWithUserInclude;
+}>;
+
+export type CommentWithTask = Prisma.CommentGetPayload<{
+  include: typeof commentWithTaskInclude;
+}>;
 
 export const commentRepository = {
-  create: (taskId: string, userId: string, message: string): Promise<CommentWithUser> =>
+  create: (
+    taskId: string,
+    userId: string,
+    message: string
+  ): Promise<CommentWithUser> =>
     prisma.comment.create({
       data: { taskId, userId, message },
       include: commentWithUserInclude,
@@ -19,12 +36,12 @@ export const commentRepository = {
       orderBy: { createdAt: 'asc' },
     }),
 
-  /** Includes the parent task's ownerId so the service can authorize deletes. */
   findById: (id: string): Promise<CommentWithTask | null> =>
     prisma.comment.findUnique({
       where: { id },
-      include: { task: { select: { ownerId: true } } },
+      include: commentWithTaskInclude,
     }),
 
-  delete: (id: string): Promise<void> => prisma.comment.delete({ where: { id } }).then(() => undefined),
+  delete: (id: string): Promise<void> =>
+    prisma.comment.delete({ where: { id } }).then(() => undefined),
 };

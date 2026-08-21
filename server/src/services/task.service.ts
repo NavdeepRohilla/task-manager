@@ -1,6 +1,6 @@
-import { Prisma, Role, Priority, TaskStatus, TaskWithRelations } from '@prisma/client';
+import { Prisma, Role, Priority, TaskStatus } from '@prisma/client';
 import { ApiError } from '../utils/ApiError';
-import { taskRepository, TaskStatsRow } from '../repositories/task.repository';
+import { TaskWithRelations, taskRepository, TaskStatsRow } from '../repositories/task.repository';
 import { CurrentUser } from '../types/express';
 
 export interface CreateTaskInput {
